@@ -332,18 +332,21 @@ function formatQuizDuration(seconds) {
   return minutes > 0 ? `${minutes}分${String(rest).padStart(2, "0")}秒` : `${rest}秒`;
 }
 
-function recordRoundLeaderboardAttempt({ completed, name, score }) {
+function recordRoundLeaderboardAttempt({ completed, name, score, time, wrong }) {
   const roundNum = state.currentRound;
   const elapsedSeconds = state.quiz.startedAt ? Math.max(1, Math.round((Date.now() - state.quiz.startedAt) / 1000)) : 0;
-  const manualScore = Number.isFinite(Number(score)) ? Math.max(0, Math.min(100, Math.round(Number(score)))) : state.quiz.score;
+  
+  // 分數不限制上下限，直接寫入輸入值
+  const manualScore = Number.isFinite(Number(score)) ? Number(score) : state.quiz.score;
   const total = state.quiz.questions.length;
+  
   const entry = {
     name: normalizePlayerName(name || state.quiz.playerName),
     score: manualScore,
     correct: Math.round((manualScore / 100) * total),
     total,
-    wrong: state.quiz.wrongCount,
-    time: elapsedSeconds,
+    wrong: Number.isFinite(Number(wrong)) ? Math.max(0, Math.round(Number(wrong))) : state.quiz.wrongCount,
+    time: Number.isFinite(Number(time)) ? Math.max(0, Math.round(Number(time))) : elapsedSeconds,
     completed: Boolean(completed),
     cleared: true,
     at: new Date().toISOString()
@@ -759,7 +762,6 @@ const app = {
     timerEl.classList.toggle("urgent", seconds <= 2);
   },
   
-  // 5秒倒數結束：自動揭曉正確答案並直接算為答對
   handleQuizTimeout() {
     const questionData = state.quiz.questions[state.quiz.currentIndex];
     const activeOptions = questionData.currentOptions || questionData.options;
@@ -806,7 +808,6 @@ const app = {
     const textEl = document.getElementById("explanation-text");
     const nextBtn = explanationBox.querySelector("button");
     
-    // 自動計算為答對
     if (!state.quiz.answeredCorrect.has(state.quiz.currentIndex)) {
       state.quiz.answeredCorrect.add(state.quiz.currentIndex);
       state.quiz.correctCount++;
@@ -939,6 +940,8 @@ const app = {
     const panel = document.getElementById("leaderboard-submit-panel");
     const nameInput = document.getElementById("leaderboard-player-name");
     const scoreInput = document.getElementById("leaderboard-score-input");
+    const timeInput = document.getElementById("leaderboard-time-input");
+    const wrongInput = document.getElementById("leaderboard-wrong-input");
     const submitBtn = document.getElementById("leaderboard-submit-btn");
     const status = document.getElementById("leaderboard-submit-status");
     if (!panel || !nameInput || !scoreInput || !submitBtn || !status) return;
@@ -947,6 +950,11 @@ const app = {
     panel.dataset.completed = completed ? "true" : "false";
     nameInput.value = getSavedPlayerName();
     scoreInput.value = state.quiz.score;
+    
+    const elapsedSeconds = state.quiz.startedAt ? Math.max(1, Math.round((Date.now() - state.quiz.startedAt) / 1000)) : 0;
+    if (timeInput) timeInput.value = elapsedSeconds;
+    if (wrongInput) wrongInput.value = state.quiz.wrongCount;
+
     submitBtn.disabled = false;
     submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> 加入排行榜';
     status.textContent = "不加入也可以直接回首頁或再測一次。";
@@ -958,30 +966,40 @@ const app = {
     const panel = document.getElementById("leaderboard-submit-panel");
     const nameInput = document.getElementById("leaderboard-player-name");
     const scoreInput = document.getElementById("leaderboard-score-input");
+    const timeInput = document.getElementById("leaderboard-time-input");
+    const wrongInput = document.getElementById("leaderboard-wrong-input");
     const submitBtn = document.getElementById("leaderboard-submit-btn");
     const status = document.getElementById("leaderboard-submit-status");
     if (!panel || !nameInput || !scoreInput || !submitBtn || !status) return;
 
     const score = Number(scoreInput.value);
-    if (!Number.isFinite(score) || score < 0 || score > 100) {
-      status.textContent = "請輸入 0 到 100 之間的成績。";
+    if (!Number.isFinite(score)) {
+      status.textContent = "請輸入有效的數字分數。";
       scoreInput.focus();
       return;
     }
 
+    const customTime = timeInput ? Number(timeInput.value) : undefined;
+    const customWrong = wrongInput ? Number(wrongInput.value) : undefined;
+
     const playerName = normalizePlayerName(nameInput.value);
     state.quiz.playerName = playerName;
     localStorage.setItem("yy_player_name", playerName);
+    
     recordRoundLeaderboardAttempt({
       completed: panel.dataset.completed === "true",
       name: playerName,
-      score
+      score: score,
+      time: Number.isFinite(customTime) ? customTime : undefined,
+      wrong: Number.isFinite(customWrong) ? customWrong : undefined
     });
+    
     state.quiz.leaderboardSubmitted = true;
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> 已加入排行榜';
     status.textContent = `已加入第 ${state.currentRound} 回排行榜。`;
   },
+
   confirmExitQuiz() {
     if (confirm("測驗尚未結束，確定要離開嗎？（離開將不記錄本次成績）")) {
       this.showPage("dashboard");
@@ -1213,7 +1231,7 @@ const game = {
   groupQuestions: [],
   questionIndex: 0,
   correctCount: 0,
-  wrongCount: 0, // 團戰錯題固定保持為 0
+  wrongCount: 0,
   monsterHp: 500,
   monsterMaxHp: 500,
 
@@ -1366,7 +1384,7 @@ const game = {
     this.combo = 0;
     this.questionIndex = 0;
     this.correctCount = 0;
-    this.wrongCount = 0; // 團戰錯題測定為 0
+    this.wrongCount = 0;
     this.monsterMaxHp = this.groupQuestions.length * 100;
     this.monsterHp = this.monsterMaxHp;
 
@@ -1378,7 +1396,7 @@ const game = {
       correct: 0,
       total: this.groupQuestions.length,
       time: 0,
-      wrong: 0, // 團戰錯題紀錄測定為 0
+      wrong: 0,
       completed: false,
       startedAt: new Date().toISOString()
     };
@@ -1506,7 +1524,7 @@ const game = {
       
     } else {
       this.combo = 0;
-      this.wrongCount = 0; // 錯題測定為 0，不進行任何錯誤累加
+      this.wrongCount = 0;
       document.getElementById("game-combo-box").style.opacity = 0;
       this.updateHeartsUI();
       btnElement.classList.add("shake");
@@ -1543,7 +1561,7 @@ const game = {
 
     const label = document.createElement("span");
     label.className = "mistakes-left";
-    label.textContent = `無限容錯 (已錯 0 次)`; // 界面顯示測定為 0 次
+    label.textContent = `無限容錯 (已錯 0 次)`;
     container.appendChild(label);
   },
   
@@ -1561,14 +1579,14 @@ const game = {
     const battle = this.getActiveBattle();
     const stats = this.getGroupStats(this.currentGroup.id);
     const playerRecord = stats.playerRecords[this.currentPlayerKey];
-    this.wrongCount = 0; // 結算時強制歸 0
+    this.wrongCount = 0;
 
     if (playerRecord && !playerRecord.completed) {
       stats.correct += this.correctCount;
       stats.totalTime += this.timeLeft;
       playerRecord.correct = this.correctCount;
       playerRecord.time = this.timeLeft;
-      playerRecord.wrong = 0; // 數據統計設定為 0
+      playerRecord.wrong = 0;
       playerRecord.completed = true;
       playerRecord.finishedAt = new Date().toISOString();
     }
