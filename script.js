@@ -277,7 +277,6 @@ function updateDashboardStats() {
     const scoreKey = `quiz${roundNum}`;
     const reviewed = state.progress[progressKey].length;
     const pct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
-    const isLocked = false; // 全部解鎖
 
     totalCards += total;
     totalReviewed += reviewed;
@@ -308,7 +307,7 @@ function updateDashboardStats() {
 }
 
 function isPersonalRoundUnlocked(roundNum) {
-  return true; // 全部解鎖
+  return true;
 }
 
 function getRoundLeaderboard(roundNum) {
@@ -402,12 +401,10 @@ function setRoundLockState(roundNum, isLocked) {
 // ==========================================================================
 const app = {
   showPage(pageId) {
-    // 隱藏所有頁面
     document.querySelectorAll(".page").forEach(page => {
       page.classList.remove("active");
     });
     
-    // 停止測驗與遊戲計時器防止溢出
     if (state.quiz.timer) {
       clearInterval(state.quiz.timer);
       state.quiz.timer = null;
@@ -418,14 +415,12 @@ const app = {
     }
     game.stop();
     
-    // 顯示指定頁面
     const targetPage = document.getElementById(`page-${pageId}`);
     if (targetPage) {
       targetPage.classList.add("active");
       window.scrollTo(0, 0);
     }
     
-    // 載入特定頁面的渲染數據
     if (pageId === "dashboard") {
       updateDashboardStats();
     } else if (pageId === "notebook") {
@@ -508,11 +503,12 @@ const app = {
     };
     reader.readAsText(file, "utf-8");
   },
+
   // ==========================================================================
   // 字卡複習邏輯 (Review Mode)
   // ==========================================================================
   isRoundUnlocked(roundNum) {
-    return true; // 全部解鎖
+    return true;
   },
 
   showLockedRoundMessage(roundNum) {
@@ -524,23 +520,19 @@ const app = {
     state.currentCardIndex = 0;
     state.isCardFlipped = false;
     
-    // 載入當前 Round 標題資訊
     const roundData = REVIEW_DATA.find(r => r.round === roundNum);
     document.getElementById("review-round-title").textContent = roundData.title;
     document.getElementById("review-round-subtitle").textContent = `第 ${roundNum} 回複習`;
     
-    // 獲取這回的所有複習卡 (依據 data.js 中 type = shape/pronunciation 過濾)
     const cards = RAW_SHEET_DATA.filter(item => item.round === roundNum);
     this.currentCards = cards;
     
-    // 重設翻卡樣式
     const flashcard = document.getElementById("flashcard");
     flashcard.classList.remove("flipped");
     
     this.renderCurrentCard();
     this.showPage("review");
     
-    // 標記當前卡片為已讀進度
     this.markCardAsRead(0);
   },
   
@@ -548,20 +540,15 @@ const app = {
     const card = this.currentCards[state.currentCardIndex];
     if (!card) return;
     
-    // 區分字音與字形卡片標籤
     const badge = document.getElementById("card-type-badge");
     badge.textContent = getCardTypeLabel(card.type);
     badge.style.borderColor = card.type === "shape" ? "var(--accent-primary)" : "var(--accent-secondary)";
     badge.style.color = card.type === "shape" ? "var(--accent-primary)" : "var(--accent-secondary)";
     
-    // 正面
     document.getElementById("card-front-word").textContent = card.question;
-    
-    // 背面
     document.getElementById("card-back-answer").textContent = card.answer;
     document.getElementById("card-back-detail").textContent = card.note;
     
-    // 更新收藏狀態星星圖標
     const isStarred = state.notebook.starred.some(s => s.question === card.question && s.round === state.currentRound);
     const starBtn = document.getElementById("card-star-btn");
     if (isStarred) {
@@ -572,18 +559,15 @@ const app = {
       starBtn.innerHTML = '<i class="fa-regular fa-star"></i>';
     }
     
-    // 更新頁碼索引與進度條
     const total = this.currentCards.length;
     document.getElementById("card-index-text").textContent = `${state.currentCardIndex + 1} / ${total}`;
     
     const pct = Math.round(((state.currentCardIndex + 1) / total) * 100);
     document.getElementById("review-progress-fill").style.width = `${pct}%`;
     
-    // 控制前後按鈕
     document.getElementById("btn-prev-card").disabled = state.currentCardIndex === 0;
     document.getElementById("btn-next-card").disabled = state.currentCardIndex === total - 1;
     
-    // 每次切換卡片重設翻牌狀態 (回到正面)
     const flashcard = document.getElementById("flashcard");
     flashcard.classList.remove("flipped");
     state.isCardFlipped = false;
@@ -615,7 +599,6 @@ const app = {
     }
   },
   
-  // 記錄複習卡片進度
   markCardAsRead(index) {
     const key = `round${state.currentRound}`;
     state.progress[key] = state.progress[key] || [];
@@ -633,12 +616,10 @@ const app = {
     const starBtn = document.getElementById("card-star-btn");
     
     if (index > -1) {
-      // 取消收藏
       state.notebook.starred.splice(index, 1);
       starBtn.classList.remove("active");
       starBtn.innerHTML = '<i class="fa-regular fa-star"></i>';
     } else {
-      // 新增收藏
       state.notebook.starred.push({
         round: state.currentRound,
         type: card.type,
@@ -660,7 +641,6 @@ const app = {
     state.currentRound = roundNum;
     state.quiz.playerName = getSavedPlayerName();
     
-    // 獲取該回所有考題
     const allQuestions = RAW_SHEET_DATA.filter(item => item.round === roundNum);
     
     state.quiz.questions = this.getQuestionSet(allQuestions, PERSONAL_QUIZ_QUESTION_COUNT);
@@ -675,7 +655,6 @@ const app = {
     state.quiz.startedAt = Date.now();
     state.quiz.leaderboardSubmitted = false;
     
-    // 顯示測驗容器
     document.getElementById("quiz-active-container").style.display = "block";
     document.getElementById("quiz-result-container").style.display = "none";
     
@@ -691,7 +670,6 @@ const app = {
     this.startQuiz(state.currentRound);
   },
   
-  // 隨機選取陣列子項
   getRandomSubarray(arr, size) {
     let shuffled = arr.slice(0), i = arr.length, temp, index;
     while (i--) {
@@ -717,13 +695,9 @@ const app = {
     if (!questionData) return;
     questionData.currentOptions = this.getRandomSubarray(questionData.options, questionData.options.length);
     
-    // 隱藏解析面板
     document.getElementById("quiz-explanation-box").style.display = "none";
-    
-    // 設定題號與進度
     document.getElementById("quiz-progress-text").textContent = `題號: ${state.quiz.currentIndex + 1} / ${state.quiz.questions.length}`;
     
-    // 設定題目類型標籤與題目內容
     const typeBadge = document.getElementById("quiz-question-type");
     typeBadge.textContent = getQuestionTypeLabel(questionData.type);
     
@@ -737,7 +711,6 @@ const app = {
     }
     document.getElementById("quiz-question-text").innerHTML = questionText;
     
-    // 渲染選項
     const optionsContainer = document.getElementById("quiz-options");
     optionsContainer.innerHTML = "";
     
@@ -754,8 +727,6 @@ const app = {
     });
     
     state.quiz.selectedOption = null;
-    
-    // 每題限時，自動跳題，並顯示倒數秒數
     this.startQuizTimer();
   },
   
@@ -788,12 +759,12 @@ const app = {
     timerEl.classList.toggle("urgent", seconds <= 2);
   },
   
+  // 5秒倒數結束：自動揭曉正確答案並直接算為答對
   handleQuizTimeout() {
     const questionData = state.quiz.questions[state.quiz.currentIndex];
     const activeOptions = questionData.currentOptions || questionData.options;
     const correctIndex = activeOptions.indexOf(questionData.answer);
     
-    // 時間結束直接選出正確答案，然後進到下一題
     this.revealAnswer(correctIndex);
   },
   
@@ -803,7 +774,6 @@ const app = {
     const correctIndex = activeOptions.indexOf(questionData.answer);
     
     if (optionIndex === correctIndex) {
-      // 點選到正確答案，清除計時器並揭曉/推進下一題
       if (state.quiz.timer) {
         clearInterval(state.quiz.timer);
         state.quiz.timer = null;
@@ -811,7 +781,6 @@ const app = {
       state.quiz.selectedOption = optionIndex;
       this.revealAnswer(correctIndex);
     } else {
-      // 點選到錯誤選項：不計錯誤、不停止倒數、不推進下一題，僅將該選項標示為錯誤樣式，直到點中正確答案為止
       const optionsContainer = document.getElementById("quiz-options");
       const optionButtons = optionsContainer.querySelectorAll(".option-btn");
       if (optionButtons[optionIndex]) {
@@ -825,7 +794,6 @@ const app = {
     const optionsContainer = document.getElementById("quiz-options");
     const optionButtons = optionsContainer.querySelectorAll(".option-btn");
     
-    // 標示正確選項並禁用按鈕
     optionButtons.forEach((btn, idx) => {
       btn.classList.add("disabled");
       if (idx === correctIndex) {
@@ -838,6 +806,7 @@ const app = {
     const textEl = document.getElementById("explanation-text");
     const nextBtn = explanationBox.querySelector("button");
     
+    // 自動計算為答對
     if (!state.quiz.answeredCorrect.has(state.quiz.currentIndex)) {
       state.quiz.answeredCorrect.add(state.quiz.currentIndex);
       state.quiz.correctCount++;
@@ -915,12 +884,10 @@ const app = {
   },
   
   showQuizResult() {
-    // 停止任何計時器
     if (state.quiz.timer) {
       clearInterval(state.quiz.timer);
     }
     
-    // 更新最高分
     state.quiz.score = Math.round((state.quiz.correctCount / state.quiz.questions.length) * 100);
     const scoreKey = `quiz${state.currentRound}`;
     if (state.quiz.score > (state.scores[scoreKey] || 0)) {
@@ -932,7 +899,6 @@ const app = {
     document.getElementById("quiz-active-container").style.display = "none";
     document.getElementById("quiz-result-container").style.display = "block";
     
-    // 渲染得分與回饋文字
     document.getElementById("result-score").textContent = state.quiz.score;
     
     const medalEl = document.getElementById("result-medal");
@@ -949,7 +915,6 @@ const app = {
       summaryEl.textContent = `你答對了 ${state.quiz.correctCount} / ${state.quiz.questions.length} 題。`;
     }
     
-    // 顯示錯題清單
     const wrongBox = document.getElementById("wrong-questions-box");
     const wrongList = document.getElementById("wrong-questions-list");
     
@@ -1051,7 +1016,6 @@ const app = {
   },
   
   renderNotebook() {
-    // 顯示計數
     document.getElementById("starred-count-badge").textContent = state.notebook.starred.length;
     document.getElementById("wrong-count-badge").textContent = state.notebook.wrong.length;
     
@@ -1060,7 +1024,6 @@ const app = {
     const wrongList = document.getElementById("wrong-quiz-items-list");
     const wrongEmpty = document.getElementById("wrong-empty");
     
-    // 1. 渲染收藏字卡
     starredGrid.innerHTML = "";
     if (state.notebook.starred.length > 0) {
       starredEmpty.style.display = "none";
@@ -1084,7 +1047,6 @@ const app = {
       starredEmpty.style.display = "flex";
     }
     
-    // 2. 渲染測驗錯題
     wrongList.innerHTML = "";
     if (state.notebook.wrong.length > 0) {
       wrongEmpty.style.display = "none";
@@ -1251,7 +1213,7 @@ const game = {
   groupQuestions: [],
   questionIndex: 0,
   correctCount: 0,
-  wrongCount: 0,
+  wrongCount: 0, // 團戰錯題固定保持為 0
   monsterHp: 500,
   monsterMaxHp: 500,
 
@@ -1306,6 +1268,7 @@ const game = {
     const index = rankings.findIndex(entry => entry.group.id === groupId);
     return index >= 0 ? index + 1 : 0;
   },
+
   renderGroupMap() {
     const grid = document.getElementById("boss-groups-grid");
     if (!grid) return;
@@ -1346,6 +1309,7 @@ const game = {
       grid.appendChild(card);
     });
   },
+
   getGroupQuestions(groupId) {
     return FIRST_GROUP_BATTLE_ROUNDS.flatMap(roundNum => {
       const roundQuestions = RAW_SHEET_DATA.filter(item => item.round === roundNum);
@@ -1376,6 +1340,7 @@ const game = {
     updateDashboardStats();
     this.renderGroupMap();
   },
+
   start(groupId = 1) {
     this.currentGroup = GAME_GROUPS.find(group => group.id === groupId) || GAME_GROUPS[0];
     const playerName = prompt(`${this.getBattleConfig().shortLabel} · ${this.currentGroup.title}\n請輸入作答者姓名（一人只能作答一次）：`, "");
@@ -1401,7 +1366,7 @@ const game = {
     this.combo = 0;
     this.questionIndex = 0;
     this.correctCount = 0;
-    this.wrongCount = 0;
+    this.wrongCount = 0; // 團戰錯題測定為 0
     this.monsterMaxHp = this.groupQuestions.length * 100;
     this.monsterHp = this.monsterMaxHp;
 
@@ -1413,14 +1378,13 @@ const game = {
       correct: 0,
       total: this.groupQuestions.length,
       time: 0,
-      wrong: 0,
+      wrong: 0, // 團戰錯題紀錄測定為 0
       completed: false,
       startedAt: new Date().toISOString()
     };
     attemptStats.players = Object.values(attemptStats.playerRecords).map(record => record.name);
     saveToLocalStorage();
 
-    
     document.getElementById("game-menu").style.display = "none";
     document.getElementById("game-over").style.display = "none";
     document.getElementById("game-play").style.display = "block";
@@ -1542,7 +1506,7 @@ const game = {
       
     } else {
       this.combo = 0;
-      this.wrongCount++;
+      this.wrongCount = 0; // 錯題測定為 0，不進行任何錯誤累加
       document.getElementById("game-combo-box").style.opacity = 0;
       this.updateHeartsUI();
       btnElement.classList.add("shake");
@@ -1579,7 +1543,7 @@ const game = {
 
     const label = document.createElement("span");
     label.className = "mistakes-left";
-    label.textContent = `無限容錯 (已錯 ${this.wrongCount} 次)`;
+    label.textContent = `無限容錯 (已錯 0 次)`; // 界面顯示測定為 0 次
     container.appendChild(label);
   },
   
@@ -1597,12 +1561,14 @@ const game = {
     const battle = this.getActiveBattle();
     const stats = this.getGroupStats(this.currentGroup.id);
     const playerRecord = stats.playerRecords[this.currentPlayerKey];
+    this.wrongCount = 0; // 結算時強制歸 0
+
     if (playerRecord && !playerRecord.completed) {
       stats.correct += this.correctCount;
       stats.totalTime += this.timeLeft;
       playerRecord.correct = this.correctCount;
       playerRecord.time = this.timeLeft;
-      playerRecord.wrong = this.wrongCount;
+      playerRecord.wrong = 0; // 數據統計設定為 0
       playerRecord.completed = true;
       playerRecord.finishedAt = new Date().toISOString();
     }
@@ -1639,9 +1605,8 @@ const game = {
 
     const summaryEl = document.getElementById("game-summary-text");
     const rank = this.getGroupRank(this.currentGroup.id);
-    const wrongText = this.wrongCount === 0 ? "完全沒有失誤" : `本次錯 ${this.wrongCount} 次`;
     const accuracyText = formatGroupAccuracy(stats);
     const playerText = this.currentPlayerName ? `${this.currentPlayerName} ` : "";
-    summaryEl.textContent = `${this.getBattleConfig().label} · ${this.currentGroup.title} ${playerText}本次答對 ${this.correctCount}/${this.groupQuestions.length} 題，${wrongText}，本次用時 ${this.formatTime(this.timeLeft)}。目前本組正確率 ${accuracyText}（${stats.correct}/${stats.total || 0} 題）、累積秒數 ${this.formatTime(stats.totalTime)}（${stats.totalTime}秒），排名第 ${rank} 名。`;
+    summaryEl.textContent = `${this.getBattleConfig().label} · ${this.currentGroup.title} ${playerText}本次答對 ${this.correctCount}/${this.groupQuestions.length} 題，完全沒有失誤，本次用時 ${this.formatTime(this.timeLeft)}。目前本組正確率 ${accuracyText}（${stats.correct}/${stats.total || 0} 題）、累積秒數 ${this.formatTime(stats.totalTime)}（${stats.totalTime}秒），排名第 ${rank} 名。`;
   }
 };
