@@ -1,0 +1,555 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日日讀形音義練習 - 九年級國文會考複習</title>
+  <!-- 引入 Google 字型：思源宋體與 Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <!-- 引入 FontAwesome 圖標 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- 引入自訂樣式表 -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme"> <!-- 預設為暗黑極光主題 -->
+
+  <!-- 背景粒子與虛化光暈 (Aurora Effects) -->
+  <div class="aurora-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- 頂部導航與標頭 -->
+    <header class="app-header">
+      <div class="header-logo" onclick="app.showPage('dashboard')">
+        <i class="fa-solid fa-book-open-reader"></i>
+        <span>日日讀<span class="highlight">形音義</span></span>
+      </div>
+      
+      <div class="header-actions">
+        <!-- 存檔與讀檔 -->
+        <button class="nav-btn" onclick="app.exportSaveFile()" title="下載存檔">
+          <i class="fa-solid fa-floppy-disk"></i>
+        </button>
+        <button class="nav-btn" onclick="app.triggerImportSave()" title="讀取存檔">
+          <i class="fa-solid fa-file-arrow-up"></i>
+        </button>
+        <input type="file" id="save-file-input" accept="application/json,.json" hidden onchange="app.importSaveFile(event)">
+        <!-- 錯題本捷徑 -->
+        <button class="nav-btn" onclick="app.showPage('notebook')" title="我的錯題本">
+          <i class="fa-solid fa-bookmark"></i>
+          <span class="badge" id="notebook-count">0</span>
+        </button>
+        <!-- 主題切換按鈕 -->
+        <button class="theme-toggle-btn" id="theme-toggle" title="切換主題">
+          <i class="fa-solid fa-sun"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- 主要內容呈現區 (SPA 頁面切換) -->
+    <main class="app-content">
+
+      <!-- ================= 頁面：儀表板 (Dashboard) ================= -->
+      <section id="page-dashboard" class="page active">
+        <div class="welcome-banner">
+          <span class="tag">會考衝刺專用</span>
+          <h1>九年級國文形音義挑戰</h1>
+          <p>親愛的社團班同學，利用每日碎片時間，精準複習會考形音義高頻考點，輕鬆拿A++！</p>
+          
+          <!-- 統計數據 -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-num" id="stat-reviewed-pct">0%</div>
+              <div class="stat-label">複習總進度</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num" id="stat-best-score">--</div>
+              <div class="stat-label">測驗最高分</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num" id="stat-game-score">--</div>
+              <div class="stat-label">團戰最高答對</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <h2><i class="fa-solid fa-graduation-cap"></i> 個人六回合複習闖關</h2>
+          <p>第一到第四回可直接挑戰且可重複作答；第五回起需前一回錯 3 題以內（含 3 題）才解鎖測驗。個人戰每回 25 題，每題 5 秒倒數，作答後自動跳題。</p>
+        </div>
+
+        <!-- 複習單元卡片網格 -->
+        <div class="rounds-grid">
+          <div class="round-card" id="card-round-1">
+            <div class="round-badge">第一回</div>
+            <div class="round-icon"><i class="fa-solid fa-burger"></i></div>
+            <h3>美食有形</h3>
+            <p>全班可直接挑戰。完成第一回後，可重複挑戰並登上本回合排行榜。</p>
+            <div class="progress-container"><div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-r1" style="width: 0%"></div></div><span class="progress-text" id="progress-text-r1">已複習 0/25 · 尚未破關</span></div>
+            <div class="round-leaderboard"><div class="round-leaderboard-title"><i class="fa-solid fa-ranking-star"></i> 本回合排行榜</div><ol id="round-leaderboard-r1"><li class="empty-rank">尚無挑戰紀錄</li></ol></div>
+            <div class="card-actions"><button class="btn btn-primary" id="btn-review-r1" onclick="app.startReview(1)"><i class="fa-solid fa-book"></i> 開始複習</button><button class="btn btn-secondary" id="btn-quiz-r1" onclick="app.startQuiz(1)"><i class="fa-solid fa-pen-clip"></i> 模擬測驗</button></div>
+          </div>
+
+          <div class="round-card" id="card-round-2">
+            <div class="round-badge">第二回</div>
+            <div class="round-icon"><i class="fa-solid fa-volume-high"></i></div>
+            <h3>美食之音</h3>
+            <p>全班可直接挑戰。完成第二回後，可重複挑戰並登上本回合排行榜。</p>
+            <div class="progress-container"><div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-r2" style="width: 0%"></div></div><span class="progress-text" id="progress-text-r2">全班可挑戰</span></div>
+            <div class="round-leaderboard"><div class="round-leaderboard-title"><i class="fa-solid fa-ranking-star"></i> 本回合排行榜</div><ol id="round-leaderboard-r2"><li class="empty-rank">尚無挑戰紀錄</li></ol></div>
+            <div class="card-actions"><button class="btn btn-primary" id="btn-review-r2" onclick="app.startReview(2)"><i class="fa-solid fa-book"></i> 開始複習</button><button class="btn btn-secondary" id="btn-quiz-r2" onclick="app.startQuiz(2)"><i class="fa-solid fa-pen-clip"></i> 模擬測驗</button></div>
+          </div>
+
+          <div class="round-card" id="card-round-3">
+            <div class="round-badge">第三回</div>
+            <div class="round-icon"><i class="fa-solid fa-mountain-sun"></i></div>
+            <h3>自然景觀</h3>
+            <p>全班可直接挑戰，可重複作答累積排行榜紀錄。</p>
+            <div class="progress-container"><div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-r3" style="width: 0%"></div></div><span class="progress-text" id="progress-text-r3">全班可挑戰</span></div>
+            <div class="round-leaderboard"><div class="round-leaderboard-title"><i class="fa-solid fa-ranking-star"></i> 本回合排行榜</div><ol id="round-leaderboard-r3"><li class="empty-rank">尚無挑戰紀錄</li></ol></div>
+            <div class="card-actions"><button class="btn btn-primary" id="btn-review-r3" onclick="app.startReview(3)"><i class="fa-solid fa-book"></i> 開始複習</button><button class="btn btn-secondary" id="btn-quiz-r3" onclick="app.startQuiz(3)"><i class="fa-solid fa-pen-clip"></i> 模擬測驗</button></div>
+          </div>
+
+          <div class="round-card" id="card-round-4">
+            <div class="round-badge">第四回</div>
+            <div class="round-icon"><i class="fa-solid fa-bug"></i></div>
+            <h3>蟲蟲危機</h3>
+            <p>第四回可直接挑戰。完成第四回測驗且錯 3 題以內（含 3 題），第五回測驗才會解鎖。</p>
+            <div class="progress-container"><div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-r4" style="width: 0%"></div></div><span class="progress-text" id="progress-text-r4">可直接挑戰</span></div>
+            <div class="round-leaderboard"><div class="round-leaderboard-title"><i class="fa-solid fa-ranking-star"></i> 本回合排行榜</div><ol id="round-leaderboard-r4"><li class="empty-rank">尚無挑戰紀錄</li></ol></div>
+            <div class="card-actions"><button class="btn btn-primary" id="btn-review-r4" onclick="app.startReview(4)"><i class="fa-solid fa-book"></i> 開始複習</button><button class="btn btn-secondary" id="btn-quiz-r4" onclick="app.startQuiz(4)"><i class="fa-solid fa-pen-clip"></i> 模擬測驗</button></div>
+          </div>
+
+          <div class="round-card" id="card-round-5">
+            <div class="round-badge">第五回</div>
+            <div class="round-icon"><i class="fa-solid fa-book-open"></i></div>
+            <h3>使物鼓事盡衝</h3>
+            <p>開始複習已開放；第五回測驗需第四回錯 3 題以內（含 3 題）才解鎖。完成第五回測驗且錯 3 題以內（含 3 題），第六回測驗才會解鎖。</p>
+            <div class="progress-container"><div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-r5" style="width: 0%"></div></div><span class="progress-text" id="progress-text-r5">複習已開放，測驗需第四回錯 3 題以內</span></div>
+            <div class="round-leaderboard"><div class="round-leaderboard-title"><i class="fa-solid fa-ranking-star"></i> 本回合排行榜</div><ol id="round-leaderboard-r5"><li class="empty-rank">尚無挑戰紀錄</li></ol></div>
+            <div class="card-actions"><button class="btn btn-primary" id="btn-review-r5" onclick="app.startReview(5)"><i class="fa-solid fa-book"></i> 開始複習</button><button class="btn btn-secondary" id="btn-quiz-r5" onclick="app.startQuiz(5)"><i class="fa-solid fa-pen-clip"></i> 模擬測驗</button></div>
+          </div>
+
+          <div class="round-card" id="card-round-6">
+            <div class="round-badge">第六回</div>
+            <div class="round-icon"><i class="fa-solid fa-seedling"></i></div>
+            <h3>種花植草</h3>
+            <p>開始複習已開放；第六回測驗需第五回錯 3 題以內（含 3 題）才解鎖。完成第六回測驗且錯 3 題以內（含 3 題），個人六回合闖關完成。</p>
+            <div class="progress-container"><div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-r6" style="width: 0%"></div></div><span class="progress-text" id="progress-text-r6">複習已開放，測驗需第五回錯 3 題以內</span></div>
+            <div class="round-leaderboard"><div class="round-leaderboard-title"><i class="fa-solid fa-ranking-star"></i> 本回合排行榜</div><ol id="round-leaderboard-r6"><li class="empty-rank">尚無挑戰紀錄</li></ol></div>
+            <div class="card-actions"><button class="btn btn-primary" id="btn-review-r6" onclick="app.startReview(6)"><i class="fa-solid fa-book"></i> 開始複習</button><button class="btn btn-secondary" id="btn-quiz-r6" onclick="app.startQuiz(6)"><i class="fa-solid fa-pen-clip"></i> 模擬測驗</button></div>
+          </div>
+        </div>
+        <div class="section-title">
+          <h2><i class="fa-solid fa-people-group"></i> 六組分組測驗</h2>
+          <p>六組分別進入第一次團體戰；每位同學只能作答一次，人數不限。每次會從第 1-6 回各抽 10 題，共 60 題；排名先比正確率，同分比累積秒數。</p>
+        </div>
+
+        <!-- 輔助區網格 -->
+        <div class="tools-grid">
+          <!-- 遊戲入口 -->
+          <div class="tool-card game-promo" onclick="app.showPage('game')">
+            <div class="tool-content">
+              <span class="mini-tag">社團熱門</span>
+              <h3><i class="fa-solid fa-shield-halved"></i> 六組總複習PK</h3>
+              <p>每組可多次進入累積成績；先比答對題數，答對相同時累積秒數越少排名越高。</p>
+            </div>
+            <div class="tool-btn">
+              <i class="fa-solid fa-play"></i>
+            </div>
+          </div>
+
+          <!-- 錯題本入口 -->
+          <div class="tool-card notebook-promo" onclick="app.showPage('notebook')">
+            <div class="tool-content">
+              <span class="mini-tag">弱點攻克</span>
+              <h3><i class="fa-solid fa-book-bookmark"></i> 錯題與收藏本</h3>
+              <p>整理你在複習中收藏的卡片，以及模擬測驗中答錯的題目，進行二次複習。</p>
+            </div>
+            <div class="tool-btn">
+              <i class="fa-solid fa-chevron-right"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 頁面：字卡複習模式 (Review Mode) ================= -->
+      <section id="page-review" class="page">
+        <div class="page-header">
+          <button class="back-btn" onclick="app.showPage('dashboard')">
+            <i class="fa-solid fa-arrow-left"></i> 返回主頁
+          </button>
+          <div class="page-title-info">
+            <span class="subtitle-label" id="review-round-subtitle">第一回</span>
+            <h2 id="review-round-title">使物鼓事盡衝</h2>
+          </div>
+        </div>
+
+        <!-- 複習字卡容器 -->
+        <div class="review-box">
+          <!-- 卡片頂部功能 -->
+          <div class="card-utility">
+            <div class="card-badge" id="card-type-badge">字形篇</div>
+            <button class="star-btn" id="card-star-btn" onclick="app.toggleStarCurrentCard()" title="加入收藏">
+              <i class="fa-regular fa-star"></i>
+            </button>
+          </div>
+
+          <!-- 3D 翻轉字卡 -->
+          <div class="flashcard-wrapper">
+            <div class="flashcard" id="flashcard" onclick="app.flipCard()">
+              <!-- 卡片正面 (題目) -->
+              <div class="card-face card-front">
+                <div class="card-prompt">請想一想括號中的字如何寫/讀</div>
+                <div class="card-main-word" id="card-front-word">
+                  大「ㄎㄨㄞˋ」朵頤
+                </div>
+                <div class="card-click-tip">
+                  <i class="fa-solid fa-rotate"></i> 點擊卡片翻面看解答
+                </div>
+              </div>
+              <!-- 卡片背面 (答案與詳解) -->
+              <div class="card-face card-reverse">
+                <div class="card-answer-title">正確解答</div>
+                <div class="card-main-answer" id="card-back-answer">快</div>
+                <div class="card-detail" id="card-back-detail">
+                  大「快」朵頤：指痛痛快快地大吃一頓。「快」在此是痛快的意思。
+                </div>
+                <div class="card-click-tip-reverse">
+                  <i class="fa-solid fa-rotate"></i> 點擊卡片翻回正面
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 卡片切換控制 -->
+          <div class="card-navigation">
+            <button class="nav-arrow-btn" onclick="app.prevCard()" id="btn-prev-card">
+              <i class="fa-solid fa-chevron-left"></i> 上一張
+            </button>
+            <div class="card-index-indicator" id="card-index-text">
+              1 / 25
+            </div>
+            <button class="nav-arrow-btn" onclick="app.nextCard()" id="btn-next-card">
+              下一張 <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <!-- 單元進度條 -->
+          <div class="round-progress-wrapper">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="review-progress-fill" style="width: 4%"></div>
+            </div>
+          </div>
+          
+          <div class="review-bottom-actions">
+            <button class="btn btn-secondary-outline" onclick="app.showPage('dashboard')">複習完畢</button>
+            <button class="btn btn-accent" id="btn-goto-quiz" onclick="app.startQuizFromReview()">
+              <i class="fa-solid fa-circle-play"></i> 立即挑戰測驗
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 頁面：測驗模式 (Quiz Mode) ================= -->
+      <section id="page-quiz" class="page">
+        <!-- 答題進行中 -->
+        <div id="quiz-active-container">
+          <div class="page-header">
+            <button class="back-btn" onclick="app.confirmExitQuiz()">
+              <i class="fa-solid fa-xmark"></i> 結束測驗
+            </button>
+            <div class="quiz-info">
+              <span class="quiz-timer" id="quiz-timer"><i class="fa-regular fa-clock"></i> 倒數 5 秒</span>
+              <span class="quiz-progress-num" id="quiz-progress-text">題號: 1 / 25</span>
+            </div>
+          </div>
+
+          <!-- 測驗卡片 -->
+          <div class="quiz-card">
+            <div class="quiz-question-type" id="quiz-question-type">單選題</div>
+            <div class="quiz-question" id="quiz-question-text">
+              「大『ㄎㄨㄞˋ』朵頤」的「ㄎㄨㄞˋ」字正確寫法為？
+            </div>
+
+            <!-- 選項列表 -->
+            <div class="quiz-options-list" id="quiz-options">
+              <!-- 動態生成選項 -->
+              <button class="option-btn" onclick="app.selectOption(0)">
+                <span class="option-letter">A</span>
+                <span class="option-text">快</span>
+              </button>
+              <button class="option-btn" onclick="app.selectOption(1)">
+                <span class="option-letter">B</span>
+                <span class="option-text">塊</span>
+              </button>
+              <button class="option-btn" onclick="app.selectOption(2)">
+                <span class="option-letter">C</span>
+                <span class="option-text">筷</span>
+              </button>
+              <button class="option-btn" onclick="app.selectOption(3)">
+                <span class="option-letter">D</span>
+                <span class="option-text">膾</span>
+              </button>
+            </div>
+
+            <!-- 答題解析面板（答題後顯示） -->
+            <div class="quiz-explanation-panel" id="quiz-explanation-box">
+              <div class="explanation-status" id="explanation-status">
+                <i class="fa-solid fa-circle-check"></i> 答對了！
+              </div>
+              <div class="explanation-text" id="explanation-text">
+                解析：大「快」朵頤：指痛痛快快地大吃一頓。
+              </div>
+              <button class="btn btn-primary" onclick="app.nextQuestion()">
+                下一題 <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 測驗結果頁面 -->
+        <div id="quiz-result-container" style="display: none;">
+          <div class="result-card">
+            <div class="result-badge-icon" id="result-medal">🏆</div>
+            <h2 id="result-title">非常棒！</h2>
+            <div class="result-score-display">
+              <div class="score-num" id="result-score">90</div>
+              <div class="score-label">測驗得分</div>
+            </div>
+            <p class="result-summary" id="result-summary-text">
+              每回 25 題，錯 3 題以內（含 3 題）即可通關並解鎖下一回。
+            </p>
+
+            <div class="leaderboard-submit-panel" id="leaderboard-submit-panel">
+              <h3><i class="fa-solid fa-ranking-star"></i> 是否加入本回合排行榜</h3>
+              <div class="leaderboard-submit-grid">
+                <label>
+                  <span>姓名或座號</span>
+                  <input type="text" id="leaderboard-player-name" placeholder="例：12號 小明">
+                </label>
+                <label>
+                  <span>登榜成績</span>
+                  <input type="number" id="leaderboard-score-input" min="0" max="100" step="1">
+                </label>
+              </div>
+              <div class="leaderboard-submit-actions">
+                <button class="btn btn-primary" id="leaderboard-submit-btn" onclick="app.submitRoundLeaderboard()">
+                  <i class="fa-solid fa-check"></i> 加入排行榜
+                </button>
+                <span id="leaderboard-submit-status">不加入也可以直接回首頁或再測一次。</span>
+              </div>
+            </div>
+
+            <!-- 錯題清單快捷操作 -->
+            <div class="wrong-questions-section" id="wrong-questions-box">
+              <h3><i class="fa-solid fa-triangle-exclamation"></i> 本次錯題紀錄</h3>
+              <div class="wrong-list" id="wrong-questions-list">
+                <!-- 動態生成錯題 -->
+              </div>
+            </div>
+
+            <div class="result-actions">
+              <button class="btn btn-secondary-outline" onclick="app.showPage('dashboard')">
+                <i class="fa-solid fa-house"></i> 回首頁
+              </button>
+              <button class="btn btn-primary" onclick="app.restartQuiz()">
+                <i class="fa-solid fa-arrow-rotate-left"></i> 再測一次
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 頁面：除錯大作戰遊戲 (Game Mode) ================= -->
+      <section id="page-game" class="page">
+        <!-- 遊戲選單頁 -->
+        <div id="game-menu" class="game-panel">
+          <div class="game-intro-card">
+            <div class="game-logo-large">
+              <i class="fa-solid fa-dragon"></i>
+            </div>
+            <h2 id="game-battle-title">第一次團體戰</h2>
+            <p id="game-battle-desc">第一次團體戰包含第 1-6 回，六組分別進入挑戰；每位同學輸入姓名後只能作答一次，一組人數不限。每次進入會從每一回隨機抽 10 題，共 60 題；正確率高者獲勝，同分比總秒數。</p>
+            <div class="game-rules">
+              <div><i class="fa-solid fa-people-group"></i> 每組人數不限；每位同學只能作答一次；第 1-6 回各抽 10 題，共 60 題。</div>
+              <div><i class="fa-solid fa-stopwatch"></i> 計時採正計時；排名先比正確率，正確率相同時，比累積秒數，秒數越少越前面。</div>
+              <div><i class="fa-solid fa-heart red-heart"></i> 分組回合保留 6 次錯誤機會；超過錯誤次數會結束該位同學本次作答。</div>
+            </div>
+            <div class="battle-set-summary" id="battle-set-summary">第一次團體戰：第 1-6 回各抽 10 題，共 60 題；正確率優先，同分比較少秒數。</div>
+            <div class="result-actions">
+              <button class="btn btn-secondary-outline" onclick="game.resetRace()">
+                <i class="fa-solid fa-flag-checkered"></i> 重置PK紀錄
+              </button>
+            </div>
+            <div class="boss-groups-grid" id="boss-groups-grid"></div>
+          </div>
+        </div>
+
+        <!-- 遊戲進行中 -->
+        <div id="game-play" class="game-panel" style="display: none;">
+          <div class="game-status-bar">
+            <!-- 錯誤機會 -->
+            <div class="game-hearts" id="game-hearts">
+              <i class="fa-solid fa-heart"></i>
+              <i class="fa-solid fa-heart"></i>
+              <i class="fa-solid fa-heart"></i>
+            </div>
+            <!-- 計分 -->
+            <div class="game-score">
+              答對: <span id="game-current-score">0</span>
+            </div>
+            <!-- 連擊 -->
+            <div class="game-combo" id="game-combo-box" style="opacity: 0;">
+              Combo <span id="game-combo-count">0</span>
+            </div>
+            <!-- 倒數計時 -->
+            <div class="game-time">
+              時間: <span id="game-time-left">0:00</span>
+            </div>
+          </div>
+
+          <div class="boss-battle-header">
+            <div>
+              <span class="subtitle-label" id="game-group-label">第一組</span>
+              <h2 id="game-boss-name">貪食錯字獸</h2>
+            </div>
+            <div class="game-question-count" id="game-question-count">1 / 5</div>
+          </div>
+          <div class="boss-hp-wrapper">
+            <div class="boss-hp-meta">
+              <span><i class="fa-solid fa-heart-pulse"></i> 怪物血量</span>
+              <span id="boss-hp-text">500 / 500</span>
+            </div>
+            <div class="boss-hp-bar">
+              <div class="boss-hp-fill" id="boss-hp-fill" style="width: 100%"></div>
+            </div>
+          </div>
+          
+          <!-- 時間條 -->
+          <div class="game-timer-wrapper">
+            <div class="game-timer-fill" id="game-timer-bar" style="width: 100%"></div>
+          </div>
+
+          <!-- 題目展示區 -->
+          <div class="game-question-area">
+            <div class="game-instruction" id="game-question-text">請選出正確答案：</div>
+            
+            <!-- 四選一答題按鈕 -->
+            <div class="game-letters-container" id="game-letters-box">
+              <button class="option-btn">A</button>
+              <button class="option-btn">B</button>
+              <button class="option-btn">C</button>
+              <button class="option-btn">D</button>
+            </div>
+
+            <!-- 即時解析回饋 -->
+            <div class="game-feedback-overlay" id="game-feedback-overlay" style="display: none;">
+              <div class="feedback-icon" id="game-feedback-icon"><i class="fa-solid fa-check"></i></div>
+              <div class="feedback-title" id="game-feedback-title">答對了！</div>
+              <div class="feedback-desc" id="game-feedback-desc">
+                正確答案是【快】。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 遊戲結束結算頁 -->
+        <div id="game-over" class="game-panel" style="display: none;">
+          <div class="result-card">
+            <div class="result-badge-icon">👾</div>
+            <h2>戰鬥結束！</h2>
+            <div class="result-score-display">
+              <div class="score-num" id="game-final-score">1500</div>
+              <div class="score-label">本次答對</div>
+            </div>
+            <p class="result-summary" id="game-summary-text">
+              太厲害了！你擊敗了題庫怪物！
+            </p>
+            <div class="result-actions">
+              <button class="btn btn-secondary-outline" onclick="app.showPage('dashboard')">
+                <i class="fa-solid fa-house"></i> 回首頁
+              </button>
+              <button class="btn btn-secondary" onclick="game.showMenu()">
+                <i class="fa-solid fa-map"></i> 回組別地圖
+              </button>
+              <button class="btn btn-accent" onclick="game.restartCurrentGroup()">
+                <i class="fa-solid fa-rotate-left"></i> 再戰一局
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 頁面：錯題與收藏本 (Notebook Mode) ================= -->
+      <section id="page-notebook" class="page">
+        <div class="page-header">
+          <button class="back-btn" onclick="app.showPage('dashboard')">
+            <i class="fa-solid fa-arrow-left"></i> 返回主頁
+          </button>
+          <div class="page-title-info">
+            <span class="subtitle-label">個人學習庫</span>
+            <h2>錯題與收藏本</h2>
+          </div>
+        </div>
+
+        <div class="notebook-wrapper">
+          <!-- 分頁切換頁籤 -->
+          <div class="notebook-tabs">
+            <button class="tab-btn active" onclick="app.switchNotebookTab('starred')" id="tab-starred">
+              <i class="fa-solid fa-star"></i> 收藏的字卡 (<span id="starred-count-badge">0</span>)
+            </button>
+            <button class="tab-btn" onclick="app.switchNotebookTab('wrong')" id="tab-wrong">
+              <i class="fa-solid fa-triangle-exclamation"></i> 測驗錯題 (<span id="wrong-count-badge">0</span>)
+            </button>
+          </div>
+
+          <!-- 卡片收藏清單 -->
+          <div class="notebook-list-container active" id="starred-list-section">
+            <div class="empty-state" id="starred-empty">
+              <i class="fa-regular fa-folder-open"></i>
+              <p>目前沒有收藏的字卡。在複習字卡時點擊右上角的星星即可收藏！</p>
+            </div>
+            <div class="starred-grid" id="starred-cards-grid">
+              <!-- 動態渲染收藏卡片 -->
+            </div>
+          </div>
+
+          <!-- 測驗錯題清單 -->
+          <div class="notebook-list-container" id="wrong-list-section">
+            <div class="empty-state" id="wrong-empty">
+              <i class="fa-solid fa-circle-check"></i>
+              <p>恭喜你！目前沒有答錯的題目。繼續保持優良表現！</p>
+            </div>
+            <div class="wrong-quiz-list" id="wrong-quiz-items-list">
+              <!-- 動態渲染錯題項目 -->
+            </div>
+          </div>
+
+          <!-- 底部工具 -->
+          <div class="notebook-footer-actions" id="notebook-actions-bar">
+            <button class="btn btn-danger-outline" onclick="app.clearNotebook()">
+              <i class="fa-solid fa-trash-can"></i> 清除所有紀錄
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 底部版權宣告 -->
+    <footer class="app-footer">
+      <p>© 2026 日日讀形音義練習 | 專為國中會考複習設計</p>
+    </footer>
+  </div>
+
+  <!-- 引入資料檔案與核心邏輯 -->
+  <script src="data.js?v=20260724-unlock-include3"></script>
+  <script src="script.js?v=20260724-unlock-include3"></script>
+</body>
+</html>
