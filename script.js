@@ -13,7 +13,29 @@ const PERSONAL_QUIZ_CLEAR_WRONG_LIMIT = Infinity;
 const PERSONAL_QUIZ_QUESTION_COUNT = 25;
 const ROUND_COUNT = REVIEW_DATA.length;
 const OPEN_ROUNDS_COUNT = ROUND_COUNT;
+// 1. 結束/離開測驗處理 (對應 HTML 的 onclick="app.confirmExitQuiz()")
+  confirmExitQuiz() {
+    // 詢問使用者確認，避免誤觸
+    if (confirm("確定要提前結束測驗嗎？系統將會結算當前分數。")) {
+      // 清除單題倒數與自動跳題計時器
+      if (state.quiz.timer) {
+        clearInterval(state.quiz.timer);
+        state.quiz.timer = null;
+      }
+      if (state.quiz.autoNextTimer) {
+        clearTimeout(state.quiz.autoNextTimer);
+        state.quiz.autoNextTimer = null;
+      }
 
+      // 進行分數結算並切換到結果畫面
+      this.showQuizResult();
+    }
+  },
+
+  // 2. 再測一次 (對應結果頁面的 onclick="app.restartQuiz()")
+  restartQuiz() {
+    this.startQuiz(state.currentRound);
+  },
 const state = {
   // 用戶學習數據
   notebook: {
